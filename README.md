@@ -1,4 +1,4 @@
-# Multimodal Deepfake & AI-Generated Content Detector
+~# Multimodal Deepfake & AI-Generated Content Detector
 
 ## 1. Project Overview
 
