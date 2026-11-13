@@ -8,3 +8,7 @@ numpy
 pillow
 torch
 transformers
+torchvision
+timm
+facenet-pytorch
+scikit-learn
