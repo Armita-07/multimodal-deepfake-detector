@@ -12,3 +12,4 @@ torchvision
 timm
 facenet-pytorch
 scikit-learn
+librosa
