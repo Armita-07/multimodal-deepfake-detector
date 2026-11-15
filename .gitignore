@@ -27,3 +27,10 @@ __pycache__/
 # Ignore generated reports
 /reports/
 /backend/reports/
+# virtual environment and editor files
+venv/
+.vscode/
+.env
+
+# personal test photos (private, never upload)
+test_images/
