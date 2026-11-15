@@ -1,0 +1,29 @@
+﻿# Python virtual environment
+/backend/.venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated reports
+/backend/reports/
+
+# Frontend dependencies
+/frontend/node_modules/
+/frontend/dist/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+# Ignore Python cache directories everywhere
+**/__pycache__/
+*.py[cod]
+
+# Ignore generated reports
+/reports/
+/backend/reports/
