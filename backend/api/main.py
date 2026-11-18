@@ -5,8 +5,10 @@ import tempfile
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.media.router import route_file
+from src.media.config import STATIC_DIR, VISUALIZATIONS_DIR
 
 
 app = FastAPI(
@@ -14,6 +16,11 @@ app = FastAPI(
     description="Multimodal AI-powered deepfake detection API",
     version="1.0.0"
 )
+
+# Ensure static directories exist and mount static file handler
+os.makedirs(VISUALIZATIONS_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 
 # CORS configuration

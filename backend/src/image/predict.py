@@ -18,8 +18,12 @@ def _load():
     """Loads CLIP and the trained weights once, the first time they are needed."""
     global _clip, _processor, _w, _b
     if _clip is None:
-        _clip = CLIPModel.from_pretrained(_MODEL_NAME).to(_DEVICE).eval()
-        _processor = CLIPProcessor.from_pretrained(_MODEL_NAME)
+        try:
+            _clip = CLIPModel.from_pretrained(_MODEL_NAME, local_files_only=True).to(_DEVICE).eval()
+            _processor = CLIPProcessor.from_pretrained(_MODEL_NAME, local_files_only=True)
+        except Exception:
+            _clip = CLIPModel.from_pretrained(_MODEL_NAME).to(_DEVICE).eval()
+            _processor = CLIPProcessor.from_pretrained(_MODEL_NAME)
         data = np.load(_WEIGHTS_PATH)
         _w = data["w"]
         _b = data["b"]
@@ -32,10 +36,17 @@ def _embed(pixel_values):
     return f / f.norm(dim=-1, keepdim=True)
 
 
-def predict_image(path: str) -> float:
-    """Returns the probability (0 to 1) that the image is fake."""
+def predict_image(image_input) -> float:
+    """Returns the probability (0 to 1) that the image is fake.
+    Accepts either a file path (str) or a PIL Image object.
+    """
     _load()
-    img = Image.open(path).convert("RGB")
+    if isinstance(image_input, str):
+        img = Image.open(image_input).convert("RGB")
+    elif isinstance(image_input, Image.Image):
+        img = image_input.convert("RGB")
+    else:
+        img = Image.open(image_input).convert("RGB")
     inputs = _processor(images=img, return_tensors="pt")
     with torch.no_grad():
         f = _embed(inputs["pixel_values"].to(_DEVICE))

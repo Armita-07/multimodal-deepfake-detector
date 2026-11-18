@@ -13,3 +13,4 @@ timm
 facenet-pytorch
 scikit-learn
 librosa
+matplotlib

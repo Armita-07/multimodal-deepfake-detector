@@ -93,41 +93,43 @@ function App() {
         </span>
       </nav>
 
-      <main className="mx-auto max-w-5xl px-6 py-16">
+      <main className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${status === 'success' ? 'max-w-7xl' : 'max-w-4xl'}`}>
 
-        <div className="text-center">
-          <div className="mb-6 inline-block rounded-full border border-cyan-800 bg-cyan-950 px-4 py-2 text-sm text-cyan-300">
-            AI-Powered Media Verification
-          </div>
+        {status !== 'success' && (
+          <div className="text-center">
+            <div className="mb-6 inline-block rounded-full border border-cyan-800 bg-cyan-950 px-4 py-2 text-sm text-cyan-300">
+              AI-Powered Media Verification
+            </div>
 
-          <h2 className="text-4xl font-bold leading-tight md:text-5xl">
-            Detect AI-Generated
-            <br />
-            <span className="text-cyan-400">
-              Images, Videos & Audio
-            </span>
-          </h2>
-
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400">
-            Upload your media and analyze it using our
-            multimodal deepfake detection system.
-            Receive predictions and interpretable results.
-          </p>
-
-          <div className="mt-5">
-            {IS_DEMO ? (
-              <span className="inline-block rounded-full border border-amber-700 bg-amber-950 px-4 py-2 text-sm text-amber-300">
-                Demo Mode — Simulated Predictions
+            <h2 className="text-4xl font-bold leading-tight md:text-5xl">
+              Detect AI-Generated
+              <br />
+              <span className="text-cyan-400">
+                Images, Videos & Audio
               </span>
-            ) : (
-              <span className="inline-block rounded-full border border-emerald-800 bg-emerald-950 px-4 py-2 text-sm text-emerald-300">
-                Live API Mode
-              </span>
-            )}
-          </div>
-        </div>
+            </h2>
 
-        <div className="mx-auto mt-12 max-w-2xl">
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400">
+              Upload your media and analyze it using our
+              multimodal deepfake detection system.
+              Receive predictions and interpretable results.
+            </p>
+
+            <div className="mt-5">
+              {IS_DEMO ? (
+                <span className="inline-block rounded-full border border-amber-700 bg-amber-950 px-4 py-2 text-sm text-amber-300">
+                  Demo Mode — Simulated Predictions
+                </span>
+              ) : (
+                <span className="inline-block rounded-full border border-emerald-800 bg-emerald-950 px-4 py-2 text-sm text-emerald-300">
+                  Live API Mode
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className={`mx-auto transition-all duration-300 ${status === 'success' ? 'w-full mt-4' : 'mt-12 max-w-2xl'}`}>
 
           {status !== 'success' && (
             <>
@@ -182,6 +184,7 @@ function App() {
           {status === 'success' && (
             <ResultsDashboard
               result={result}
+              selectedFile={selectedFile}
               onReset={handleRemoveFile}
             />
           )}
