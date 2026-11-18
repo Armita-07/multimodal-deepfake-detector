@@ -38,13 +38,28 @@ function normalizeResult(data, mediaType) {
     throw new Error('Backend returned an invalid prediction label.')
   }
 
+  let visualizationUrl = null
+  if (data.visualization && data.visualization.url) {
+    visualizationUrl = data.visualization.url.startsWith('http')
+      ? data.visualization.url
+      : `${API_BASE_URL}${data.visualization.url}`
+  } else if (data.heatmap_url) {
+    visualizationUrl = data.heatmap_url.startsWith('http')
+      ? data.heatmap_url
+      : `${API_BASE_URL}${data.heatmap_url}`
+  }
+
   return {
     label,
     fake_probability: fakeProbability,
+    real_probability: data.real_probability !== undefined ? data.real_probability : (1 - fakeProbability),
     confidence,
     modality: data.modality || mediaType,
     explanation: data.explanation || null,
-    heatmap_url: null,
+    heatmap_url: visualizationUrl,
+    visualization_url: visualizationUrl,
+    visualization: data.visualization || null,
+    metrics: data.metrics || null,
     demo: false,
     modalities_used: data.modalities_used || [],
     fusion_method: data.fusion_method || null,

@@ -7,16 +7,23 @@ _DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 _WEIGHTS = os.path.join(os.path.dirname(__file__), "audio_clf.pth")
 
 _model = None
-_FAKE_CLASS_INDEX = 1
+_FAKE_CLASS_INDEX = 0
 
 
 class AudioClassifier(nn.Module):
     def __init__(self):
         super().__init__()
-        self.backbone = Wav2Vec2Model.from_pretrained(
-            "facebook/wav2vec2-base",
-            output_hidden_states=False,
-        )
+        try:
+            self.backbone = Wav2Vec2Model.from_pretrained(
+                "facebook/wav2vec2-base",
+                local_files_only=True,
+                output_hidden_states=False,
+            )
+        except Exception:
+            self.backbone = Wav2Vec2Model.from_pretrained(
+                "facebook/wav2vec2-base",
+                output_hidden_states=False,
+            )
         self.backbone.freeze_feature_encoder()
         self.head = nn.Sequential(
             nn.Linear(768, 128),
