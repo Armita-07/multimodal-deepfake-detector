@@ -70,7 +70,6 @@ The system is expected to contain the following components:
 4. **Video Detection Module:** Samples and analyzes video frames and aggregates predictions.
 5. **Audio Detection Module:** Analyzes audio for patterns associated with synthetic or manipulated speech.
 6. **Multimodal Fusion Module:** Combines available model outputs when supported by the selected methods.
-7. **Reporting Module:** Presents predictions, confidence information, and relevant limitations.
 
 ## 6. Technology Stack
 

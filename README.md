@@ -20,6 +20,9 @@ By leveraging foundational self-supervised models (**Wav2Vec 2.0**, **OpenAI CLI
    - [Module 6: Dynamic Weighted Late Fusion](#module-6-multimodal-fusion-engine)
    - [Module 7: Explainability & Structured Reporting](#module-7-explainability--structured-reporting)
 5. [Benchmark Evaluation & Experimental Results](#benchmark-evaluation--experimental-results)
+   - [Audio Model: ASVspoof 2019 LA](#1-audio-model-asvspoof-2019-logical-access-la-benchmark)
+   - [Video Model: FaceForensics++ c23](#2-video-model-faceforensics-c23-compressed-benchmark)
+   - [Image Model: CIFAKE, Faces & In-The-Wild](#3-image-model-cifake-cross-domain-generalization--in-the-wild-benchmarks)
 6. [Technology Stack](#technology-stack)
 7. [Repository Layout](#repository-layout)
 8. [Installation & Getting Started](#installation--getting-started)
@@ -133,14 +136,16 @@ flowchart TD
 - **Path**: `backend/src/image/`
 - **Key Files**: `predict.py`, `image_clf_combined.npz`
 - **Architecture**:
-  - **Backbone**: `openai/clip-vit-base-patch32`
+  - **Backbone**: `openai/clip-vit-base-patch32` (Vision Transformer with 512-dim visual projection).
   - **Inference Pipeline**:
-    1. Resizes and normalizes images using Hugging Face's `CLIPProcessor`.
+    1. Resizes and normalizes input images using Hugging Face's `CLIPProcessor`.
     2. Runs inference through `CLIPModel.vision_model` and `visual_projection`.
     3. Normalizes the resulting feature vector to the unit hypersphere:
        $$\mathbf{f} = \frac{\mathbf{x}}{\|\mathbf{x}\|_2} \in \mathbb{R}^{512}$$
-    4. Evaluates against pre-computed projection hyperplane weights $(\mathbf{w}, b)$:
+    4. Evaluates against pre-computed projection hyperplane weights $(\mathbf{w}, b)$ loaded from `image_clf_combined.npz`:
        $$z = \mathbf{f} \cdot \mathbf{w} + b \quad\implies\quad P(\text{Fake}) = \frac{1}{1 + e^{-z}}$$
+  - **Training Strategy & Domain Generalization**:
+    - Deploys the fine-tuned **`Combined`** classifier (`image_clf_combined.npz`), trained jointly on general synthetic media (**CIFAKE**) and dedicated human face datasets to eliminate domain collapse on facial imagery while maintaining high cross-dataset generalization.
 
 ### Module 4: Video Deepfake Detection
 - **Path**: `backend/src/video/`
@@ -227,6 +232,51 @@ Actual FAKE (360)         240              120        (True Positive: 240)
 Actual REAL (360)          12              348        (False Positive: 12 - 3.3%)
 ```
 > **Key Takeaway**: A **95% precision on fake faces** and a low **3.3% false alarm rate** protects genuine users from false accusations. When aggregated across 16 uniformly sampled frames using mean probability pooling, video-level detection confidence significantly outperforms isolated frame predictions.
+
+---
+
+### 3. Image Model: CIFAKE, Cross-Domain Generalization & In-The-Wild Benchmarks
+
+The image detection model (OpenAI CLIP ViT-B/32 + linear projection) was evaluated across multiple dimensions: in-distribution performance on **CIFAKE**, out-of-domain transfer to human face datasets, resilience against lossy **JPEG compression**, and in-the-wild generalization across diverse generative architectures (StyleGAN, Stable Diffusion, and Flux).
+
+#### Table 3: Model Comparison & Compression Robustness
+| Benchmark / Evaluation Split | Model Variant | Accuracy | F1-Score | ROC-AUC |
+| :--- | :--- | :---: | :---: | :---: |
+| **CIFAKE Test Set** (Baseline) | `CIFAKE-only` | **94.45%** | 0.9448 | **0.9902** |
+| **Faces Test Set** (Out-of-Domain Dataset) | `CIFAKE-only` | 44.80% | 0.4435 | 0.4185 |
+| **CIFAKE, JPEG Quality 90** | `CIFAKE-only` | 93.90% | 0.9384 | 0.9875 |
+| **CIFAKE, JPEG Quality 50** | `CIFAKE-only` | 91.40% | 0.9154 | 0.9725 |
+| **CIFAKE, JPEG Quality 20** (Severe Compression) | `CIFAKE-only` | 84.10% | 0.8321 | 0.9257 |
+| **CIFAKE Test Set** | **`Combined`** *(Deployed)* | **92.70%** | **0.9273** | **0.9819** |
+| **Faces Test Set** | **`Combined`** *(Deployed)* | **88.50%** | **0.8869** | **0.9446** |
+
+---
+
+#### Table 4: In-The-Wild Evaluation by Generative Architecture (28 Images)
+Evaluated using the deployed `Combined` model (`image_clf_combined.npz`) on 28 real-world test images across 4 distinct groups:
+
+| Evaluation Group | Correct Classifications | Empirical Score Behavior & Findings |
+| :--- | :---: | :--- |
+| **Real Human Photos (Friend photos)** | **13 / 13 (100%)** | Every real photo scored near $0.00$ ($P(\text{Fake}) \approx 0$). Zero false positives. |
+| **StyleGAN Fakes (`thispersondoesnotexist`)** | **5 / 5 (100%)** | Strong detection: fake probabilities ranged from $0.72$ to $1.00$. |
+| **Stable Diffusion Fakes** | **1 / 5 (20%)** | 4 out of 5 samples scored below $0.02$ (evading detection). |
+| **Flux Fakes** | **0 / 5 (0%)** | All 5 samples scored below $0.44$ (evading detection). |
+| **Overall In-The-Wild Accuracy** | **19 / 28 (67.9%)** | Robust on real & GAN media; highlights cross-diffusion gap. |
+
+---
+
+#### Key Discussion & Academic Insights for Module 3:
+1. **Resolution of Domain Collapse via Combined Training**:
+   - Training solely on CIFAKE (`CIFAKE-only`) produced an overfit decision boundary that collapsed to **44.8% accuracy** (worse than random guessing) and an ROC-AUC of **0.4185** when evaluated on facial datasets.
+   - The **`Combined` model** (`image_clf_combined.npz`) resolved this domain transfer gap, boosting facial detection accuracy by **+43.7 percentage points to 88.5%** (ROC-AUC **0.9446**) while maintaining **92.70% accuracy** (ROC-AUC **0.9819**) on CIFAKE.
+2. **Resilience to Channel & Social Media JPEG Compression**:
+   - Under standard web compression ($\text{JPEG Quality} = 90$), accuracy drops by merely $0.55\%$ (from $94.45\%$ to $93.9\%$).
+   - Even under aggressive lossy compression ($\text{JPEG Quality} = 20$), the model maintains **84.10% accuracy** and an ROC-AUC of **0.9257**, demonstrating stability against typical social network compression artifacts.
+3. **Zero False Alarm Rate on Real Human Photos ($FPR = 0\%$)**:
+   - In content moderation and digital identity systems, false positives (falsely accusing authentic human photos of being deepfakes) cause reputational harm. The deployed model correctly identified **13 out of 13 authentic photos** with probabilities tightly clustered near $0.0$.
+4. **Cross-Generator Architectural Discrepancy (GANs vs. Latent & Flow Diffusion)**:
+   - The detector achieved **100% accuracy on StyleGAN** synthetic faces ($P(\text{Fake}) \in [0.72, 1.0]$), successfully capturing characteristic high-frequency GAN artifacts.
+   - However, modern latent diffusion (**Stable Diffusion**, 1/5) and flow-matching (**Flux**, 0/5) architectures produce fundamentally distinct synthetic footprints that bypassed the GAN-dominated decision surface. This finding highlights the critical need for continuous multi-generator training in forensic systems.
 
 ---
 
